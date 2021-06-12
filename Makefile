@@ -33,7 +33,7 @@ program: $(TARGET).bin
 
 $(TARGET).json: $(OBJS)
 	ghdl -e $(TARGET)
-	yosys -m ghdl -p "ghdl $(TARGET); opt; opt_mem; synth_ice40 -device u -dsp -abc2 -retime -top $(TARGET) -json $@"
+	yosys -m ghdl -p "ghdl $(TARGET); opt; opt_mem; synth_ice40 -abc2 -retime -top $(TARGET) -json $@"
 
 $(TARGET)_tb: $(OBJS) $(TB_OBJS)
 	ghdl -e $@

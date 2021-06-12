@@ -3,11 +3,12 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.bootrom.all;
 
 entity bulk_ram is
   generic (
     -- 32-bit read/write port.  ADDR_WIDTH is in bytes, not words.
-    ADDR_WIDTH : integer := 17 -- default 128k
+    ADDR_WIDTH : integer := 10 -- default 128k
     );
   port (
     clk : in std_logic;
@@ -22,54 +23,32 @@ entity bulk_ram is
 end bulk_ram;
 
 architecture behavioral of bulk_ram is
+  type mem_t is array (0 to 256) of std_logic_vector(31 downto 0);
+  constant NUM_WORDS : integer :=  2**(ADDR_WIDTH - 2);
 
-component SB_SPRAM256KA is  
-          Port (  CLOCK   : in std_logic ;
-                ADDRESS : in std_logic_vector(13 downto 0);
-                DATAIN  : in std_logic_vector(15 downto 0);
-                MASKWREN : in std_logic_vector(3 downto 0);
-                WREN    : in std_logic;
-                CHIPSELECT: in std_logic ;
-                STANDBY : in std_logic := 'L' ;
-                SLEEP   : in std_logic := 'L' ;
-                POWEROFF: in std_logic := 'H' ;         --  Note : 1'b0 to POWEROFF RAM  , 1'b1 to POWERON RAM block at wrapper level.
-                DATAOUT : out std_logic_vector(15 downto 0)
-             );
-end component;
+  -- signal ram : rom_t; Will reserve 8k unconditionally and yosys will 
+  --not optimize it out.
 
-  signal wren : std_logic;
-  signal cs0, cs1 : std_logic;
-  signal we0, we1 : std_logic_vector(3 downto 0);
-  signal rd0  : std_logic_vector(31 downto 0);
-  signal rd1  : std_logic_vector(31 downto 0);
-
+  signal ram : mem_t;
 begin
-
-  wren <= we(3) or we(2) or we(1) or we(0);
-  cs0  <= en and not addr(14);
-  cs1  <= en and     addr(14);
-  we0  <= we(3) & we(3) & we(2) & we(2);
-  we1  <= we(1) & we(1) & we(0) & we(0);
-
-  r0 : SB_SPRAM256KA port map (clock => clk, address => addr(13 downto 0), datain => di(31 downto 16), 
-                               maskwren => we0,
-                               wren => wren, chipselect => cs0, dataout => rd0(31 downto 16),
-                               standby => '0', sleep => '0', poweroff => '1');
-
-  r1 : SB_SPRAM256KA port map (clock => clk, address => addr(13 downto 0), datain => di(15 downto  0), 
-                               maskwren => we1,
-                               wren => wren, chipselect => cs0, dataout => rd0(15 downto 0),
-                               standby => '0', sleep => '0', poweroff => '1');
-
-  r2 : SB_SPRAM256KA port map (clock => clk, address => addr(13 downto 0), datain => di(31 downto 16), 
-                               maskwren => we0,
-                               wren => wren, chipselect => cs1, dataout => rd1(31 downto 16),
-                               standby => '0', sleep => '0', poweroff => '1');
-
-  r3 : SB_SPRAM256KA port map (clock => clk, address => addr(13 downto 0), datain => di(15 downto  0), 
-                               maskwren => we1,
-                               wren => wren, chipselect => cs1, dataout => rd1(15 downto 0),
-                               standby => '0', sleep => '0', poweroff => '1');
-
-  do <= rd0 when addr(14) = '0' else rd1;
+    process (clk, en)
+      variable read : std_logic_vector(31 downto 0);
+    begin
+      if clk'event and clk = '1' and en = '1' then
+        if we(3) = '1' then
+          ram(to_integer(unsigned(addr)))(31 downto 24) <= di(31 downto 24);
+        end if;
+        if we(2) = '1' then
+          ram(to_integer(unsigned(addr)))(23 downto 16) <= di(23 downto 16);
+        end if;
+        if we(1) = '1' then
+          ram(to_integer(unsigned(addr)))(15 downto 8 ) <= di(15 downto 8 );
+        end if;
+        if we(0) = '1' then
+          ram(to_integer(unsigned(addr)))(7  downto 0 ) <= di(7  downto 0 );
+        end if;
+        read := ram(to_integer(unsigned(addr)));
+        do <= read;
+      end if;
+    end process;
 end behavioral;
