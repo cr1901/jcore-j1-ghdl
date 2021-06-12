@@ -8,8 +8,8 @@ decode_table_reverse.vhd
 EXTRA_RTL = \
 data_bus_pkg.vhd monitor_pkg.vhd ram_init.vhd lattice_ebr.vhd bus_monitor.vhd timeout_cnt.vhm \
 cpu_simple_sram.vhd lattice_spr_wrap.vhd cpu_bulk_sram.vhd
-DEVICE = up5k
-PACKAGE = sg48
+DEVICE = hx8k
+PACKAGE = ct256
 
 STOP_TIME = 40us
 
