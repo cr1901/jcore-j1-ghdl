@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 use work.cpu2j0_pack.all;
 
 entity cpu_bulk_sram is
+  generic (ADDR_WIDTH : natural := 10);
   port (
     clk : in std_logic;
     ibus_i : in cpu_instruction_o_t;
@@ -27,14 +28,14 @@ begin
            (db_i.wr and db_i.we(1)) &
            (db_i.wr and db_i.we(0));
 
-  ra <= db_i.a(9 downto 2) when db_i.en = '1' else ibus_i.a(9 downto 2);
+  ra <= db_i.a(ADDR_WIDTH - 1 downto 2) when db_i.en = '1' else ibus_i.a(ADDR_WIDTH - 1 downto 2);
 
   -- clk memory on negative edge to avoid wait states
   iclk <= not clk;
   en <= db_i.en or ibus_i.en;
 
   r : entity work.bulk_ram
-    generic map (ADDR_WIDTH => 10)
+    generic map (ADDR_WIDTH => ADDR_WIDTH)
     port map(clk => iclk,
              en => en,
              we => db_we,

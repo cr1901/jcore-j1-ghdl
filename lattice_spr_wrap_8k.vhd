@@ -10,7 +10,7 @@ use work.bootrom.all;
 entity bulk_ram is
   generic (
     -- 32-bit read/write port.  ADDR_WIDTH is in bytes, not words.
-    ADDR_WIDTH : integer := 10 -- default 128k
+    ADDR_WIDTH : integer := 10 -- default 1k
     );
   port (
     clk : in std_logic;
@@ -25,32 +25,32 @@ entity bulk_ram is
 end bulk_ram;
 
 architecture behavioral of bulk_ram is
-  type mem_t is array (0 to 256) of std_logic_vector(31 downto 0);
   constant NUM_WORDS : integer :=  2**(ADDR_WIDTH - 2);
+  type mem_t is array (0 to NUM_WORDS) of std_logic_vector(31 downto 0);
 
   -- signal ram : rom_t; Will reserve 8k unconditionally and yosys will
   --not optimize it out.
 
   signal ram : mem_t;
 begin
-    process (clk, en)
-      variable read : std_logic_vector(31 downto 0);
-    begin
-      if clk'event and clk = '1' and en = '1' then
-        if we(3) = '1' then
-          ram(to_integer(unsigned(addr)))(31 downto 24) <= di(31 downto 24);
-        end if;
-        if we(2) = '1' then
-          ram(to_integer(unsigned(addr)))(23 downto 16) <= di(23 downto 16);
-        end if;
-        if we(1) = '1' then
-          ram(to_integer(unsigned(addr)))(15 downto 8 ) <= di(15 downto 8 );
-        end if;
-        if we(0) = '1' then
-          ram(to_integer(unsigned(addr)))(7  downto 0 ) <= di(7  downto 0 );
-        end if;
-        read := ram(to_integer(unsigned(addr)));
-        do <= read;
+  process (clk, en)
+    variable read : std_logic_vector(31 downto 0);
+  begin
+    if clk'event and clk = '1' and en = '1' then
+      if we(3) = '1' then
+        ram(to_integer(unsigned(addr)))(31 downto 24) <= di(31 downto 24);
       end if;
-    end process;
+      if we(2) = '1' then
+        ram(to_integer(unsigned(addr)))(23 downto 16) <= di(23 downto 16);
+      end if;
+      if we(1) = '1' then
+        ram(to_integer(unsigned(addr)))(15 downto 8 ) <= di(15 downto 8 );
+      end if;
+      if we(0) = '1' then
+        ram(to_integer(unsigned(addr)))(7  downto 0 ) <= di(7  downto 0 );
+      end if;
+      read := ram(to_integer(unsigned(addr)));
+      do <= read;
+    end if;
+  end process;
 end behavioral;
