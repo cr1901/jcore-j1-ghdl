@@ -1,4 +1,3 @@
-TARGET = cpu_lattice
 LIB_RTL = \
 cpu2j0_pkg.vhd components_pkg.vhd mult_pkg.vhd decode_pkg.vhd decode_body.vhd datapath_pkg.vhd \
 cpu.vhd decode.vhd decode_core.vhm decode_table.vhd datapath.vhm register_file_sync.vhd mult.vhm \
@@ -7,9 +6,23 @@ decode_table_reverse.vhd
 #decode_table_simple.vhd
 EXTRA_RTL = \
 data_bus_pkg.vhd monitor_pkg.vhd ram_init.vhd lattice_ebr.vhd bus_monitor.vhd timeout_cnt.vhm \
-cpu_simple_sram.vhd lattice_spr_wrap.vhd cpu_bulk_sram.vhd
+cpu_simple_sram.vhd
+
+ifeq ($(TARGET),cpu_lattice)
+DEVICE = up5k
+PACKAGE = sg48
+EXTRA_RTL += lattice_spr_wrap.vhd cpu_bulk_sram.vhd
+OPT_ARGS = -device u -dsp
+endif
+ifeq ($(TARGET),ice40hx8k_b_evn)
 DEVICE = hx8k
 PACKAGE = ct256
+EXTRA_RTL +=  lattice_spr_wrap_8k.vhd cpu_bulk_sram_8k.vhd
+OPT_ARGS =
+endif
+ifeq ($(TARGET),)
+    $(error "TARGET must be set.")
+endif
 
 STOP_TIME = 40us
 
@@ -33,7 +46,7 @@ program: $(TARGET).bin
 
 $(TARGET).json: $(OBJS)
 	ghdl -e $(TARGET)
-	yosys -m ghdl -p "ghdl $(TARGET); opt; opt_mem; synth_ice40 -abc2 -retime -top $(TARGET) -json $@"
+	yosys -m ghdl -p "ghdl $(TARGET); opt; opt_mem; synth_ice40 $(OPT_ARGS) -abc2 -retime -top $(TARGET) -json $@"
 
 $(TARGET)_tb: $(OBJS) $(TB_OBJS)
 	ghdl -e $@
